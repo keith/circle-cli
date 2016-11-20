@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+
+from helpers import credentials
+import requests
+import signal
+import sys
+
+URL = "https://circleci.com/api/v1.1/me"
+
+
+def signal_handle(sig, frame):
+    sys.exit(0)
+
+
+def output_json(json):
+    print("Name: {}".format(json["name"]))
+    print("Login: {}".format(json["login"]))
+    print("")
+    print("Identities:")
+    for details in json["identities"].values():
+        print("\tdomain: {}".format(details["domain"]))
+        print("\tusername: {}".format(details["handle"]))
+        print("")
+
+    print("Projects:")
+    for url in json["projects"]:
+        print("\t{}".format(url))
+
+
+def main():
+    password = credentials.credentials()
+    params = {"circle-token": password}
+    response = requests.get(URL, params=params)
+    if response.status_code == 200:
+        output_json(response.json())
+    elif response.status_code == 401:
+        print("Got 401, check your token in your ~/.netrc")
+        sys.exit(1)
+    else:
+        print("Got: {}".format(response.status_code))
+        print(response.json())
+        sys.exit(1)
+
+
+signal.signal(signal.SIGINT, signal_handle)
+if __name__ == "__main__":
+    main()

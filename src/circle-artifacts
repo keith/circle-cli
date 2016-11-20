@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+
+from helpers import credentials
+from helpers import git
+import argparse
+import os
+import requests
+import signal
+import subprocess
+import sys
+import tempfile
+
+URL_TEMPLATE = "https://circleci.com/api/v1.1/project/{}/{}/{}/artifacts"
+
+
+def signal_handle(sig, frame):
+    sys.exit(0)
+
+
+def download_artifact(url, destination, params):
+    response = requests.get(url, stream=True, params=params)
+    with open(destination, "w+") as f:
+        for chunk in response.iter_content(chunk_size=1024):
+            if chunk:
+                f.write(chunk)
+
+
+def main(provider, repo, number, destination):
+    url = URL_TEMPLATE.format(provider, repo, number)
+    password = credentials.credentials()
+    params = {"circle-token": password}
+    response = requests.get(url, params=params)
+
+    for artifact in response.json():
+        artifact_url = artifact["url"]
+        filename = os.path.join(destination, os.path.basename(artifact_url))
+        download_artifact(artifact_url, filename, params)
+
+    print("Downloaded artifacts to {}".format(destination))
+    subprocess.check_output(["open", "-R", destination])
+
+
+signal.signal(signal.SIGINT, signal_handle)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-n", "--number", help="The CircleCI build number")
+    parser.add_argument("-p", "--provider", default="github")
+    parser.add_argument("-d", "--destination",
+                        default=tempfile.mkdtemp(prefix="circlecli"))
+    parser.add_argument("-r", "--repo", default=git.current_repo_path())
+
+    arguments = parser.parse_args()
+
+    if arguments.repo is None:
+        parser.error("Repo is required\n\n{}".format(parser.format_help()))
+
+    main(arguments.provider, arguments.repo, arguments.number,
+         os.path.expanduser(arguments.destination))
