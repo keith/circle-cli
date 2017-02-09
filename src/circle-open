@@ -2,41 +2,34 @@
 
 from helpers import git
 import argparse
-import signal
-import sys
 import webbrowser
 
 URL_TEMPLATE = "https://circleci.com/{}/{}/{}"
 
 
-def signal_handle(sig, frame):
-    sys.exit(0)
+def main(provider, repo, identifier):
+    if identifier:
+        try:
+            path = str(int(identifier))
+        except ValueError:
+            path = "tree/{}".format(identifier)
+    else:
+        path = ""
 
-
-def main(build, branch, _, repo):
-    last_part = build if build else "tree/{}".format(branch)
-    url = URL_TEMPLATE.format("gh", repo, last_part)
+    provder_argument = "gh" if provider == "github" else ""
+    url = URL_TEMPLATE.format(provder_argument, repo, path)
     webbrowser.open_new_tab(url)
 
 
-signal.signal(signal.SIGINT, signal_handle)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", "--provider", default="github")
     parser.add_argument("-r", "--repo", default=git.current_repo_path())
-
-    group = parser.add_mutually_exclusive_group()
-    group.add_argument("-b", "--branch", help="The branch build page to open")
-    group.add_argument("-n", "--number", help="The CircleCI build number")
+    parser.add_argument("IDENTIFIER",
+                        help="The branch or build number to open", nargs="?")
 
     arguments = parser.parse_args()
-
     if arguments.repo is None:
-        parser.error("Repo is required\n\n{}".format(parser.format_help()))
+        parser.error("Repo is required")
 
-    if arguments.branch is None and arguments.number is None:
-        parser.error("Branch or build number is required\n\n{}"
-                     .format(parser.format_help()))
-
-    main(arguments.number, arguments.branch, arguments.provider,
-         arguments.repo)
+    main(arguments.provider, arguments.repo, arguments.IDENTIFIER)
