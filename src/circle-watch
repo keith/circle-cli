@@ -1,23 +1,18 @@
 #!/usr/bin/env python
 
+from helpers import circle
 from helpers import credentials
 from helpers import git
 import argparse
 import json
 import requests
-import signal
 import sys
 import time
 
 URL_TEMPLATE = "https://circleci.com/api/v1.1/project/{}/{}/{}"
 
 
-def signal_handle(sig, frame):
-    sys.exit(0)
-
-
-def main(provider, repo, number, newest_step, last_completed_step):
-    url = URL_TEMPLATE.format(provider, repo, number)
+def poll_build(url, newest_step, last_completed_step):
     password = credentials.credentials()
     params = {"circle-token": password}
     headers = {"Content-Type": "application/json"}
@@ -48,19 +43,44 @@ def main(provider, repo, number, newest_step, last_completed_step):
         sys.exit(0)
 
     time.sleep(3)
-    main(provider, repo, number, newest_step, last_completed_step)
+    poll_build(url, newest_step, last_completed_step)
 
 
-signal.signal(signal.SIGINT, signal_handle)
+def main(provider, repo, branch, number):
+    if number:
+        url = URL_TEMPLATE.format(provider, repo, number)
+        poll_build(url, -1, -1)
+        return
+
+    branch = branch if branch else git.current_branch()
+    if not branch:
+        print("No build number or branch provided")
+        sys.exit(1)
+
+    builds = circle.get_builds(provider, repo, 1, branch, False, True)
+    if not builds:
+        print("No builds found for branch: {}".format(branch))
+        sys.exit(0)
+
+    build_number = builds[0]["build_num"]
+    print("Watching build #{}".format(build_number))
+    url = URL_TEMPLATE.format(provider, repo, build_number)
+    poll_build(url, -1, -1)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-p", "--provider", default="github")
     parser.add_argument("-r", "--repo", default=git.current_repo_path())
-    parser.add_argument("-n", "--number", help="The CircleCI build number",
-                        required=True)
+    parser.add_argument("-n", "--number", help="The CircleCI build number")
+    parser.add_argument("-b", "--branch")
     arguments = parser.parse_args()
 
     if arguments.repo is None:
         parser.error("Repo is required\n\n{}".format(parser.format_help()))
 
-    main(arguments.provider, arguments.repo, arguments.number, -1, -1)
+    try:
+        main(arguments.provider, arguments.repo, arguments.branch,
+             arguments.number)
+    except KeyboardInterrupt:
+        sys.exit(0)
