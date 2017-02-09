@@ -1,7 +1,7 @@
 # circle-cli
 
 These are a set of tools for interacting with
-[CircleCI][https://circleci.com].
+[CircleCI](https://circleci.com).
 
 ## Installation
 
