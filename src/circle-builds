@@ -46,6 +46,10 @@ def _format_build(build, fields, include_branch):
 
 def main(provider, repo, fields, count, branch, show_all):
     response = circle.get_builds(provider, repo, count, branch, show_all)
+    if not response:
+        print("No builds for {}".format(repo))
+        sys.exit(1)
+
     rows = [_format_build(build, fields, show_all) for build in response]
     formatter.output_rows(rows)
 
