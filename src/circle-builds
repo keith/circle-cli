@@ -1,16 +1,13 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-from helpers import credentials
+from helpers import circle
 from helpers import formatter
 from helpers import git
 import argparse
 import json
-import requests
 import signal
 import sys
-
-URL_TEMPLATE = "https://circleci.com/api/v1.1/project/{}/{}/{}"
 
 
 def signal_handle(sig, frame):
@@ -42,27 +39,14 @@ def _format_build(build, fields, include_branch):
     output += _extract_custom_fields(build, fields)
     if include_branch:
         output.append(build["branch"])
-    output.append(build["author_name"])
+    name = build["author_name"]
+    output.append(name if name else "<unknown>")
     return output
 
 
 def main(provider, repo, fields, count, branch, show_all):
-    if show_all:
-        branch_argument = ""
-    else:
-        branch_argument = "tree/{}".format(branch)
-
-    url = URL_TEMPLATE.format(provider, repo, branch_argument)
-    password = credentials.credentials()
-    params = {"circle-token": password, "limit": count}
-    response = requests.get(url, params=params)
-
-    if response.status_code != 200:
-        print(response.json(), file=sys.stderr)
-        sys.exit(1)
-
-    rows = [_format_build(build, fields, show_all)
-            for build in response.json()]
+    response = circle.get_builds(provider, repo, count, branch, show_all)
+    rows = [_format_build(build, fields, show_all) for build in response]
     formatter.output_rows(rows)
 
 signal.signal(signal.SIGINT, signal_handle)
