@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from helpers import circle
 from helpers import credentials
 from helpers import git
 import argparse
@@ -19,16 +20,9 @@ def main(provider, repo, branch):
     password = credentials.credentials()
     params = {"circle-token": password}
     headers = {"Content-Type": "application/json"}
+    response = circle.get_builds(provider, repo, 100, branch, not branch, True)
 
-    branch_argument = "tree/{}".format(branch) if branch else ""
-    url = BUILDS_TEMPLATE.format(provider, repo, branch_argument)
-    response = requests.get(url, params=params, headers=headers)
-
-    if response.status_code != 200:
-        print("Failed to fetch builds: {}".format(response.json()))
-        sys.exit(1)
-
-    for blob in response.json():
+    for blob in response:
         if blob["lifecycle"] == "finished":
             continue
 
