@@ -1,0 +1,10 @@
+12345	success	branchname                      	abc
+12345	success	branchname-number2              	abc
+12345	success	master                          	A long name foo
+12345	success	master                          	foo bar
+12345	success	master                          	í
+12345	success	master                          	foo bar
+12345	failure	foobarbaz                       	foo bar
+12345	success	release-whatever                	foo bar
+12345	success	even-more-branches-some-are-long	foo
+12345	success	master                          	a long name bar
