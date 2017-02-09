@@ -1,6 +1,20 @@
 import subprocess
 
 
+def current_branch():
+    try:
+        devnull = open('/dev/null', 'w')
+        branch = subprocess.check_output(["git", "rev-parse", "--abbrev-ref",
+                                          "HEAD"], stderr=devnull).strip()
+    except subprocess.CalledProcessError:
+        return None
+
+    if branch == "HEAD":
+        return None
+
+    return branch
+
+
 def current_repo_path():
     try:
         devnull = open('/dev/null', 'w')

@@ -46,33 +46,44 @@ def _format_build(build, fields, include_branch):
     return output
 
 
-def main(provider, repo, fields, branch):
-    branch_argument = "tree/{}".format(branch) if branch else ""
+def main(provider, repo, fields, count, branch, show_all):
+    if show_all:
+        branch_argument = ""
+    else:
+        branch_argument = "tree/{}".format(branch)
+
     url = URL_TEMPLATE.format(provider, repo, branch_argument)
     password = credentials.credentials()
-    params = {"circle-token": password}
+    params = {"circle-token": password, "limit": count}
     response = requests.get(url, params=params)
 
     if response.status_code != 200:
         print(response.json(), file=sys.stderr)
         sys.exit(1)
 
-    rows = [_format_build(build, fields, branch is None)
+    rows = [_format_build(build, fields, show_all)
             for build in response.json()]
     formatter.output_rows(rows)
 
 signal.signal(signal.SIGINT, signal_handle)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-b", "--branch")
     parser.add_argument("-f", "--fields", nargs="+")
     parser.add_argument("-p", "--provider", default="github")
     parser.add_argument("-r", "--repo", default=git.current_repo_path())
+    parser.add_argument("-c", "--count", default=10)
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument("-a", "--all", action="store_true", default=False)
+    group.add_argument("-b", "--branch", default=git.current_branch())
 
     arguments = parser.parse_args()
 
     if arguments.repo is None:
-        parser.error("Repo is required\n\n{}".format(parser.format_help()))
+        parser.error("Repo is required")
+
+    if not arguments.all and arguments.branch is None:
+        parser.error("Either --branch or --all must be specified")
 
     main(arguments.provider, arguments.repo, arguments.fields or [],
-         arguments.branch)
+         arguments.count, arguments.branch, arguments.all)
