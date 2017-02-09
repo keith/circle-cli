@@ -12,7 +12,7 @@ def current_branch():
     if branch == "HEAD":
         return None
 
-    return branch
+    return branch.decode()
 
 
 def current_repo_path():
@@ -26,7 +26,7 @@ def current_repo_path():
     if len(remotes) == 0:
         return None
 
-    remote = remotes[0]
+    remote = remotes[0].decode()
     if "origin" in remotes:
         remote = "origin"
 
@@ -35,6 +35,7 @@ def current_repo_path():
 
 def _get_url_for_remote(remote):
     url = subprocess.check_output(["git", "remote", "get-url", remote]).strip()
+    url = url.decode()
     path = "/".join(url.split("/")[-2:])
     path = path.split(".")[0]
     return path
