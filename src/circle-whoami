@@ -19,7 +19,7 @@ def output_json(json):
     print("Identities:")
     for details in json["identities"].values():
         print("\tdomain: {}".format(details["domain"]))
-        print("\tusername: {}".format(details["handle"]))
+        print("\tusername: {}".format(details["login"]))
         print("")
 
     print("Projects:")
