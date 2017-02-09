@@ -51,7 +51,7 @@ def main(provider, repo, fields, count, branch, show_all):
         sys.exit(1)
 
     rows = [_format_build(build, fields, show_all) for build in response]
-    formatter.output_rows(rows)
+    print(formatter.output_rows(rows))
 
 signal.signal(signal.SIGINT, signal_handle)
 if __name__ == "__main__":
