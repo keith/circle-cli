@@ -3,6 +3,7 @@
 from helpers import credentials
 from helpers import git
 import argparse
+import json
 import os
 import requests
 import signal
@@ -31,7 +32,12 @@ def main(provider, repo, number, destination):
     params = {"circle-token": password}
     response = requests.get(url, params=params)
 
+    if response.status_code != 200:
+        print("Failed to access build: {}".format(json.dumps(response.json())))
+        sys.exit(1)
+
     for artifact in response.json():
+        print("Downloading {}".format(artifact["pretty_path"]))
         artifact_url = artifact["url"]
         filename = os.path.join(destination, os.path.basename(artifact_url))
         download_artifact(artifact_url, filename, params)
@@ -43,7 +49,8 @@ def main(provider, repo, number, destination):
 signal.signal(signal.SIGINT, signal_handle)
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-n", "--number", help="The CircleCI build number")
+    parser.add_argument("-n", "--number", help="The CircleCI build number",
+                        required=True)
     parser.add_argument("-p", "--provider", default="github")
     parser.add_argument("-d", "--destination",
                         default=tempfile.mkdtemp(prefix="circlecli"))
