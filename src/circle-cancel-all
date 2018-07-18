@@ -20,10 +20,10 @@ def main(provider, repo, branch):
     password = credentials.credentials()
     params = {"circle-token": password}
     headers = {"Content-Type": "application/json"}
-    response = circle.get_builds(provider, repo, 100, branch, not branch, True)
+    response = circle.get_builds(provider, repo, 100, branch, not branch)
 
     for blob in response:
-        if blob["lifecycle"] == "finished":
+        if blob["lifecycle"] == "finished" or blob["canceled"]:
             continue
 
         build_number = blob["build_num"]
