@@ -27,8 +27,7 @@ def _extract_custom_fields(build, fields):
                 print("Failed to access '{}' in\n{}"
                       .format(field, pretty_string), file=sys.stderr)
                 sys.exit(1)
-        if obj is not None:
-            output.append(obj)
+        output.append(obj or 'null')
     return output
 
 
