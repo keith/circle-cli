@@ -2,7 +2,7 @@ def _safe_encode(value):
     try:
         return str(value)
     except UnicodeEncodeError:
-        return value
+        return value.encode("utf-8")
 
 
 def output_rows(rows):
